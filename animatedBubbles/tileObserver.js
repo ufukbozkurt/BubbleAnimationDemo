@@ -14,6 +14,7 @@ export default function TileObserver(imap,tempUrl){
     const tUrl = tempUrl;
 
     var loadedtiles = [];
+    var reqtileids = []; //tiles which are already requested//experimental//
     var observers = [];
 
     const noticeObservers = function(){
@@ -111,6 +112,8 @@ export default function TileObserver(imap,tempUrl){
 
     const manageCache = function(newtiles){
 
+        const tileId = ( tile ) => tile.z+""+tile.x+""+tile.y;
+
         var cachedTiles = [];
         var requestTiles = [];
 
@@ -120,11 +123,16 @@ export default function TileObserver(imap,tempUrl){
                 cachedTiles.push( cTile[0] );
             }
             else{
-                requestTiles.push( newtiles[i] );
+                if( !reqtileids.includes( tileId( newtiles[i] ) ) ){
+                    requestTiles.push( newtiles[i] );
+                    reqtileids.push( tileId( newtiles[i] ) );
+                }
             }  
         }
-
+//console.log("=>",newtiles,cachedTiles,requestTiles);
         requestChain( requestTiles, function( tilesWithLoad ){
+            var twlids = tilesWithLoad.map( twl => tileId(twl) );
+            reqtileids = reqtileids.filter( tid => !twlids.includes(tid) );
             loadedtiles = cachedTiles.concat( tilesWithLoad ); 
             noticeObservers();
         } );

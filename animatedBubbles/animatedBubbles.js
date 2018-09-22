@@ -32,7 +32,7 @@ function TintedBubbles( imap, iid, data, style, beforeId=undefined  ){
 	        "circle-stroke-width": style["circle-stroke-width"] || 1,
 	        "circle-stroke-color": style["circle-stroke-color"] || "#000000",
 	        "circle-stroke-opacity": style["circle-stroke-opacity"] || 1,
-	        //"circle-blur":1
+	        "circle-blur": style["circle-blur"] || 0,
         }
     },beforeId);
 
@@ -40,12 +40,20 @@ function TintedBubbles( imap, iid, data, style, beforeId=undefined  ){
         map.getSource(id).setData( data );
     }
 
+    this.setFade = function( value ){
+    	map.setPaintProperty(id, "circle-opacity", value);
+    	map.setPaintProperty(id, "circle-stroke-opacity", value);
+    }
+
     this.setStyle = function(style){
-
     	for( var stype in style ){
-    		map.setPaintProperty(id, stype, style[stype]);
+ 			if( ["circle-radius-stops","circle-color-stops"].includes( stype ) ) {
+ 				map.setPaintProperty(id, stype.replace("-stops",""), buildInterpolation( style[stype]) );
+ 			}
+ 			else{
+ 				map.setPaintProperty(id, stype, style[stype]);
+ 			}
     	}
-
     }
 
     this.setVisibility = function( visible ){
@@ -64,11 +72,11 @@ function TintedBubbles( imap, iid, data, style, beforeId=undefined  ){
 
 }
 
-export default function BubbleAnimation( imap, iurl, duration, style, dateprop, dateObserverFunc=null){
+export default function BubbleAnimation( imap, iurl, duration, style, dateprop, observerFunc=null){
 	const self = this;
 	const map = imap;
 	const url = iurl;
-
+	
 	var pause = false;
 	var animateBubbles = null;
 	var layersManager;
@@ -76,7 +84,10 @@ export default function BubbleAnimation( imap, iurl, duration, style, dateprop, 
 	var fader;
 
 	const dateorganizer = new DateOrganizer(map,url,dateprop,(newDateLine)=>{
-		if( fader ) fader.updateKeys(newDateLine,false)
+		if( fader ){
+			fader.updateKeys(newDateLine,false);
+			observerManager.noticeObservers( { type: "dateline_changed" } , "animob" );
+		}
 	});
 
 	var animReqId = null;
@@ -88,24 +99,33 @@ export default function BubbleAnimation( imap, iurl, duration, style, dateprop, 
 	const Fader = function( ikeys, min, step, maxActiveKeyCount=10 ){
 		/* determines opacity of dates */
 		const self = this;
-		var keys = [];
 		const opacityStep = step;
 		const minOpacity = min;
-		var nextthreshold = 0.3;
 
-		var current, currentIndex; 
+		var keys = [];
+		var nextthreshold = 0.3;
+		var groupCount, current, currentIndex; 
+
+		this.setKey = function( ikey ){
+			var index = keys.findIndex( k => k.includes( ikey ) );
+			currentIndex = index;
+			current=[ keys[ index ], 1 ];
+		}
 
 		this.updateKeys = function( ikeys, reset=true ){
 			const activeKeyCount = Math.max( ( ikeys.length * ( ( 1 - minOpacity ) / opacityStep ) ) / ( duration * 60 ) , 2 );
 			const activecount = Math.min( activeKeyCount, maxActiveKeyCount );
-			const groupCount = Math.ceil( activeKeyCount/maxActiveKeyCount  );
+			
+			groupCount = Math.ceil( activeKeyCount/maxActiveKeyCount  );
 			nextthreshold = 1 - ( Math.floor( ( 1 / activecount ) * 10 ) / 10 );
 
 			var bkeyIndex = 0;
 			if( !reset ){
-				var indexKeys = keys[ currentIndex ].split("&");
-				var last = indexKeys[ indexKeys.length - 1];
-				bkeyIndex = Math.ceil( ikeys.indexOf(last)/groupCount );
+				if( keys[ currentIndex ] ){
+					var indexKeys = keys[ currentIndex ].split("&");
+					var last = indexKeys[ indexKeys.length - 1];
+					bkeyIndex = Math.ceil( ikeys.indexOf(last)/groupCount );
+				}
 				//console.log("bkeyIndex",bkeyIndex,last);
 			}
 			
@@ -129,7 +149,7 @@ export default function BubbleAnimation( imap, iurl, duration, style, dateprop, 
 			else{
 				keys = ikeys;
 			}
-			//console.log("keys",keys);
+			
 			currentIndex = bkeyIndex;
 			current=[ keys[ bkeyIndex ], 1 ];
 
@@ -138,17 +158,23 @@ export default function BubbleAnimation( imap, iurl, duration, style, dateprop, 
 		this.next = function(){
 			//console.log( "date", keys[currentIndex] );
 			for( var i = 0; i < current.length; i+=2 ){
-				current[i+1] = current[i+1] - opacityStep;
-				
-				if( current[i+1] <= min ){
-					current.splice(i,2);
+				if(keys.length>0){
+					current[i+1] = current[i+1] - opacityStep;
+					
+					if( current[i+1] <= min ){
+						current.splice(i,2);
+					}
+					if( i+1 == current.length-1 && current[i+1] <= nextthreshold ){
+						currentIndex = (currentIndex+1)%keys.length;//loop
+						current.push( keys[currentIndex], 1 );
+						break;
+					}
 				}
-				if( i+1 == current.length-1 && current[i+1] <= nextthreshold ){
-					currentIndex = (currentIndex+1)%keys.length;//loop
-					current.push( keys[currentIndex], 1 );
-					break;
+				else{
+					current = [];
 				}
 			}
+			
 			return current;
 		}
 
@@ -174,7 +200,12 @@ export default function BubbleAnimation( imap, iurl, duration, style, dateprop, 
 
 		var style = istyle;
 
-		this.updateLayers = function( faderNext ){
+		this.setStyle = (styleObject) =>{
+			style = Object.assign(style,styleObject);
+			layers.forEach( l => l.layer.setStyle(styleObject) );
+		}
+
+		this.applyFader = function( faderNext ){
 			var activeKeys = faderNext.filter( (v,i) => i%2==0 );
 
 			//console.log( "=>>", activeKeys );
@@ -182,10 +213,7 @@ export default function BubbleAnimation( imap, iurl, duration, style, dateprop, 
 			for( var i = 0; i < faderNext.length; i+=2 ){
 				var lindex = layers.findIndex( l => l.key == faderNext[i]);
 				if( lindex > -1 ){
-					layers[ lindex ].layer.setStyle({
-						"circle-opacity": faderNext[i+1],
-						"circle-stroke-opacity": faderNext[i+1]
-					});
+					layers[ lindex ].layer.setFade( faderNext[i+1] );
 				}
 				else{
 					var idleLayers = layers.filter( l => !activeKeys.includes(l.key) );
@@ -194,10 +222,7 @@ export default function BubbleAnimation( imap, iurl, duration, style, dateprop, 
 
 						idleLayers[ 0 ].key = faderNext[i];
 						idleLayers[ 0 ].layer.setData( dateorganizer.getDate( ...faderNext[i].split("&") ) );
-						idleLayers[ 0 ].layer.setStyle({
-							"circle-opacity":faderNext[i+1],
-							"circle-stroke-opacity":faderNext[i+1]
-						});
+						idleLayers[ 0 ].layer.setFade( faderNext[i+1] );
 
 					}
 					else{
@@ -233,8 +258,10 @@ export default function BubbleAnimation( imap, iurl, duration, style, dateprop, 
 		const opacityStep = 0.05;//these 3lines assumes that fps is 60. if not then animation time will not be equal duration :(
 
 		//console.log("activedays",activedays);
+
+		//this may be converted to more event like approach
 		observerManager = new ObserverManagement();
-		if( dateObserverFunc ) observerManager.registerObserver( "dob", dateObserverFunc );
+		if( observerFunc ) observerManager.registerObserver( "animob", observerFunc );
 
 		layersManager = new LayerManagement( style );
 		fader = new Fader( dateline, minOpacity, opacityStep );
@@ -250,19 +277,20 @@ export default function BubbleAnimation( imap, iurl, duration, style, dateprop, 
 
                 var opacityCond = fader.next() ;
 
-                layersManager.updateLayers( opacityCond );
+                layersManager.applyFader( opacityCond );
    
             	frameCount++;
                 if(timing==0) timing = performance.now();
                 if( ( performance.now() - timing ) >= 1000 ){
-                	//console.log("fps",frameCount); 
+                	console.log("fps",frameCount); 
                 	timing=0;
                 	frameCount=0;
-                	if( dateObserverFunc ){
-	                	var last = opacityCond[opacityCond.length-2].split("&");
-	                	observerManager.noticeObservers( last[ last.length - 1 ] , "dob" );
-	                }
                 }
+
+                if( observerFunc && opacityCond.length>0 ){
+	                var last = opacityCond[opacityCond.length-2].split("&");
+	                observerManager.noticeObservers( { type: "value", value: last[ last.length - 1 ] } , "animob" );
+	            }
 
             }
             catch(err){ //if error occurs when animation playing, stop
@@ -272,28 +300,37 @@ export default function BubbleAnimation( imap, iurl, duration, style, dateprop, 
 	    };
 
 	    animReqId = requestAnimationFrame(animateBubbles);
-
+	    observerManager.noticeObservers( { type: "started" } , "animob" );
 	});
 
-	this.pause = function(){
-		if(animateBubbles){
-			pause=true;
-			cancelAnimationFrame(animReqId);
-		}
-		else{
-			console.warn("Animation is not started!");
-		}
+	this.setStyle = function(styleObject){
+		layersManager.setStyle( styleObject );
 	}
 
-	this.play = function(){
+	this.getDateline = function(){
+		return dateorganizer.getDateline();
+	}
+
+	this.setDate = function( date ){
+		fader.setKey( date );
+		observerManager.noticeObservers( { type: "date_changed" } , "animob" );
+	}
+
+	this.play = function(){//pause
 		if(animateBubbles){
 			if( pause ){
 				pause = false;
 				animateBubbles( performance.now() );
+				observerManager.noticeObservers( { type: "played" } , "animob" );
+			}
+			else{
+				pause=true;
+				cancelAnimationFrame(animReqId);
+				observerManager.noticeObservers( { type: "paused" } , "animob" );
 			}
 		}
 		else{
-			console.warn("Animation is not started!");
+			console.warn("Animation is not started yet!");
 		}
 	}
 
@@ -303,9 +340,10 @@ export default function BubbleAnimation( imap, iurl, duration, style, dateprop, 
 			cancelAnimationFrame(animReqId);
 			layersManager.dispose();
 			fader.reset();
+			observerManager.noticeObservers( { type: "stopped" } , "animob" );
 		}
 		else{
-			console.warn("Animation is not started!");
+			console.warn("Animation is not started yet!");
 		}
 	}
 
@@ -314,6 +352,7 @@ export default function BubbleAnimation( imap, iurl, duration, style, dateprop, 
 		layersManager.dispose();
 		fader.dispose();
 		dateorganizer.dispose();
+		observerManager.dispose();
 	}
 
 }
