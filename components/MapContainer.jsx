@@ -27,7 +27,7 @@ class MapContainer extends React.Component {
       this.layer=null;
    }
    componentDidMount(){
-    	mapboxgl.accessToken = "pk.eyJ1IjoidWZ1a2Jvemt1cnQiLCJhIjoiUExkVVVQayJ9.ZBMMVm95zTbvvIuMELOerA";
+    	mapboxgl.accessToken = "<Your Access Token>";
   		var map = new mapboxgl.Map({
 		    container: 'map',
         style: "mapbox://styles/mapbox/dark-v9",
