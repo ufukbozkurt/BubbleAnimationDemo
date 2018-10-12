@@ -39,7 +39,7 @@ class MapContainer extends React.Component {
       
         this.layer = new BubbleAnimation( 
                                           map,
-                                          gtd_geojson,//"http://servis.pirireis.com.tr:8090/Pbf/{z}/{x}/{y}.pbf/?q=SELECT%20t1.geom%20as%20%22geom%22%2C(t1.olusayisi)%20as%20%22olusayisi%22%2CTO_CHAR(t1.tarih%2C'YYYY-MM-DD')%20as%20%22tarih%22%20FROM%20gtd2017%20t1%20&connection=NPtgpYhHbgOqqPyncRV2OA7Dgo%2B4Qs8DdL4oGu3JVQeKbL0Yw21gbi%2FzHK5GMNFR&db=pg&layername=layer_data&geomtype=point&simplifyPointBaseZoom=1",
+                                          gtd_geojson,
                                           30,
                                           this.state.style,
                                           "tarih", 
