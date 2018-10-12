@@ -39,36 +39,19 @@ import TileObserver from "./tileObserver.js"
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 
-function DateOrganizer(imap,tempUrl,dateprop="date",dateObserverFunc=null){
+function DateOrganizer(imap,dou,dateprop="date",dateObserverFunc=null){
     const self = this;
     const map = imap;
-    const turl = tempUrl;
 
+    var turl;
+    var geojson
     var dateHash = {};
 
     var ready = false;
     var readyTimeout=null;
 
-    const tileObserver = new TileObserver(map,turl);
-
     const observerManager = new ObserverManagement();
-    if( dateObserverFunc ) observerManager.registerObserver( "dob", dateObserverFunc );
-
-    tileObserver.addObserverFunc( function(tiles){
-
-        var featureArray = [];
-
-        for(var i = 0; i < tiles.length; i++){
-            featureArray = featureArray.concat( tiles[i].features );
-        }
-
-        changeDates( featureArray );
-
-        ready = true;
-        
-    }, "timelineRequester"  );
-
-
+    
     const changeDates = function( features ){
         
         var newDateHash = {};
@@ -155,11 +138,44 @@ function DateOrganizer(imap,tempUrl,dateprop="date",dateObserverFunc=null){
     }
 
     this.dispose = function(){
-        tileObserver.dispose();
+        if(tileObserver) tileObserver.dispose();
         dateHash = {};
         ready = false;
         readyTimeout = null;
         observerManager.dispose();
+    }
+
+    if( dateObserverFunc ) observerManager.registerObserver( "dob", dateObserverFunc );
+
+    if( typeof dou == "string" ) {
+        turl = dou;
+    }
+    else{
+        geojson = dou;
+    }
+
+    if( turl ){
+
+        const tileObserver = new TileObserver(map,turl);
+
+        tileObserver.addObserverFunc( function(tiles){
+
+            var featureArray = [];
+
+            for(var i = 0; i < tiles.length; i++){
+                featureArray = featureArray.concat( tiles[i].features );
+            }
+
+            changeDates( featureArray );
+
+            ready = true;
+            
+        }, "timelineRequester"  );
+
+    }
+    else{
+        changeDates( geojson.features );
+        ready = true;
     }
     
 }

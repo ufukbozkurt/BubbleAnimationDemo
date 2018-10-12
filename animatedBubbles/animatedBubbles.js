@@ -72,10 +72,11 @@ function TintedBubbles( imap, iid, data, style, beforeId=undefined  ){
 
 }
 
-export default function BubbleAnimation( imap, iurl, duration, style, dateprop, observerFunc=null){
+export default function BubbleAnimation( imap, idata, duration, style, idateprop, observerFunc=null){
 	const self = this;
 	const map = imap;
-	const url = iurl;
+	const sdata = idata;
+	const dateprop = idateprop;
 	
 	var pause = false;
 	var animateBubbles = null;
@@ -83,7 +84,7 @@ export default function BubbleAnimation( imap, iurl, duration, style, dateprop, 
 	var observerManager;
 	var fader;
 
-	const dateorganizer = new DateOrganizer(map,url,dateprop,(newDateLine)=>{
+	const dateorganizer = new DateOrganizer(map,sdata,dateprop,(newDateLine)=>{
 		if( fader ){
 			fader.updateKeys(newDateLine,false);
 			observerManager.noticeObservers( { type: "dateline_changed" } , "animob" );
@@ -299,8 +300,8 @@ export default function BubbleAnimation( imap, iurl, duration, style, dateprop, 
 
 	    };
 
-	    animReqId = requestAnimationFrame(animateBubbles);
-	    observerManager.noticeObservers( { type: "started" } , "animob" );
+	    //animReqId = requestAnimationFrame(animateBubbles);
+	    //observerManager.noticeObservers( { type: "started" } , "animob" );
 	});
 
 	this.setStyle = function(styleObject){
@@ -317,7 +318,11 @@ export default function BubbleAnimation( imap, iurl, duration, style, dateprop, 
 	}
 
 	this.play = function(){//pause
-		if(animateBubbles){
+		if(animReqId==null){
+			animReqId = requestAnimationFrame(animateBubbles);
+	    	observerManager.noticeObservers( { type: "started" } , "animob" );
+		}
+		else if(animateBubbles){
 			if( pause ){
 				pause = false;
 				animateBubbles( performance.now() );
