@@ -1,6 +1,6 @@
-Bubble animation example with mapbox-gl
+# Bubble animation example with mapbox-gl
 
-Install and Execute
+### Install and Execute
 
 Add your mapbox access token in file "/components/MapContainer.jsx" line:30, and then 
 
