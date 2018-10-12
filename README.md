@@ -1,4 +1,4 @@
-Bubble animation example with mapbox.gl
+Bubble animation example with mapbox-gl
 
 Install and Execute
 
