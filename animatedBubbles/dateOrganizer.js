@@ -1,12 +1,3 @@
-import TileObserver from "./tileObserver.js"
-
-/************************************************************/
-/************************************************************/
-/************************************************************/
-/************************************************************/
-/************************************************************/
-/************************************************************/
-
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -39,7 +30,7 @@ import TileObserver from "./tileObserver.js"
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 
-function DateOrganizer(imap,dou,dateprop="date",dateObserverFunc=null){
+function DateOrganizer(imap,geojson,dateprop="date",dateObserverFunc=null){
     const self = this;
     const map = imap;
 
@@ -146,37 +137,9 @@ function DateOrganizer(imap,dou,dateprop="date",dateObserverFunc=null){
     }
 
     if( dateObserverFunc ) observerManager.registerObserver( "dob", dateObserverFunc );
-
-    if( typeof dou == "string" ) {
-        turl = dou;
-    }
-    else{
-        geojson = dou;
-    }
-
-    if( turl ){
-
-        const tileObserver = new TileObserver(map,turl);
-
-        tileObserver.addObserverFunc( function(tiles){
-
-            var featureArray = [];
-
-            for(var i = 0; i < tiles.length; i++){
-                featureArray = featureArray.concat( tiles[i].features );
-            }
-
-            changeDates( featureArray );
-
-            ready = true;
-            
-        }, "timelineRequester"  );
-
-    }
-    else{
-        changeDates( geojson.features );
-        ready = true;
-    }
+    
+    changeDates( geojson.features );
+    ready = true;
     
 }
 

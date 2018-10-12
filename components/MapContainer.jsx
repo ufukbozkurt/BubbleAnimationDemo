@@ -8,49 +8,13 @@ import BubbleAnimation from '../animatedBubbles/animatedBubbles.js';
 import gtd_geojson from '../data/gtd2017.json';
 /***********************************/
 
-/*
-   layer = BubbleAnimation( map, 
-                           vectorTileUrl, 
-                           duration in seconds, 
-                           style,
-                           date prop name,
-                           value callback )
-
-   layer.stop() => to reset and pause animation
-   layer.pause() = to pause animation
-   layer.play() = to play animation
-   layer.dispose() = to destroy everyting and permanently finish animation
-
-   style spec: 
-     "circle-radius": static radius value 
-     "circle-radius-stops": { property: property from vector url for radius, breaks:[[ input value 1, radius value 1],[ input value 2, radius value 2],...]}
-
-     "circle-color":  static color value
-     "circle-color-stops": { property: property from vector url for color , breaks:[[ input value 1, color value 1],[ input value 2, color value 2],...]}
-
-     "circle-opacity": static stroke opacity
-     "circle-stroke-width": style["circle-stroke-width"] || 1,
-     "circle-stroke-color": static stroke color
-     "circle-stroke-opacity": begin stroke opacity
-
-
-     -you can either use circle-radius or circle-radius-stops
-     -you can either use circle-color or circle-color-stops
-
-     notes:
-         - value callback is called for every second.
-         - duration should not be less than 20 seconds for big data otherwise fps rate may decrease
-         - It may take time for animation to load
-
-*/
-
 class MapContainer extends React.Component {
    constructor(props) {
       super(props); 
 
       this.state = { 
         style:{
-          "circle-radius-stops":{property:"olusayisi",breaks:[[0,3],[300,30]]},
+          "circle-radius-stops":{property:"olusayisi",breaks:[[0,3],[300,300]]},
           "circle-color-stops":{property:"olusayisi",breaks:[[0,"#9CE500"],[25,"#DDE100"],[50,"#DD9E00"],[80,"#D95A00"],[150,"#D51800"],[300,"#FF0000"]]},
           "circle-stroke-width":1,
           "circle-stroke-color":"#ffffff",
@@ -63,7 +27,7 @@ class MapContainer extends React.Component {
       this.layer=null;
    }
    componentDidMount(){
-    	mapboxgl.accessToken = 'pk.eyJ1IjoidWZ1a2Jvemt1cnQiLCJhIjoiUExkVVVQayJ9.ZBMMVm95zTbvvIuMELOerA';
+    	mapboxgl.accessToken = "pk.eyJ1IjoidWZ1a2Jvemt1cnQiLCJhIjoiUExkVVVQayJ9.ZBMMVm95zTbvvIuMELOerA";
   		var map = new mapboxgl.Map({
 		    container: 'map',
         style: "mapbox://styles/mapbox/dark-v9",
@@ -127,65 +91,3 @@ class MapContainer extends React.Component {
 }
 
 export default MapContainer;
-
-///////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////TEST CODES////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-/*
-//Animation control test code:
-setTimeout(() => {
-  layer.pause();
-  console.log("PAUSE");
-  setTimeout(() => { 
-     layer.play(); 
-     console.log("PLAY");
-     setTimeout(() => { 
-        layer.stop(); 
-        console.log("STOP");
-        setTimeout(() => { 
-           layer.play(); 
-           console.log("PLAY");
-           setTimeout(() => { 
-              layer.dispose(); 
-              console.log("DISPOSED");
-           },3000);
-        },3000);
-     },3000);
-  },3000);
-},15000);
-*//*
-  var si = 0;
-  var styleArr = [
-    {
-      "circle-radius-stops":{property:"olusayisi",breaks:[[0,4],[300,40]]},
-      "circle-color-stops":{property:"olusayisi",breaks:[[0,"#33FF00"],[300,"#CE1127"]]},
-      "circle-stroke-width":0,
-      "circle-blur":1
-    },
-    {
-      "circle-radius-stops":{property:"olusayisi",breaks:[[0,2],[300,20]]},
-      "circle-color-stops":{property:"olusayisi",breaks:[[0,"#FF00FF"],[25,"#7700C2"],[50,"#B500C6"],[80,"#CA009F"],[150,"#D20027"],[300,"#FF0000"]]},
-      "circle-stroke-width":1,
-      "circle-stroke-color":"#000",
-      "circle-blur":0
-    },
-    {  
-      "circle-radius-stops":{property:"olusayisi",breaks:[[0,3],[300,30]]},
-      "circle-color-stops":{property:"olusayisi",breaks:[[0,"#CCFFFF"],[25,"#CCE5FF"],[50,"#E5CCFF"],[80,"#FFCCFF"],[150,"#FF9999"],[300,"#FF3333"]]},
-      "circle-stroke-color":"#fff",
-      "circle-blur":0.5
-    },
-    {  
-      "circle-radius-stops":{property:"olusayisi",breaks:[[0,3],[300,30]]},
-      "circle-color-stops":{property:"olusayisi",breaks:[[0,"#9CE500"],[25,"#DDE100"],[50,"#DD9E00"],[80,"#D95A00"],[150,"#D51800"],[300,"#FF0000"]]},
-      "circle-stroke-color":"#fff",
-      "circle-blur":0
-    }
-  ];
-
-  setInterval(()=>{ 
-    layer.setStyle( styleArr[ si%styleArr.length ] );
-    si++; 
-  },10000)
-*/
